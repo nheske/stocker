@@ -31,21 +31,21 @@ if __name__== "__main__":
   )
 
   # Run the retirement scenario once and print and plot the results:
-  retirement_distribution.run()
-  print(retirement_distribution.results())
-  retirement_distribution.plot(smooth=False)
+  # retirement_distribution.run()
+  # print(retirement_distribution.results())
+  # retirement_distribution.plot(smooth=False)
 
   # Run a monte carlo simulation of this scenario with 400 iterations:
   mc = stocker.Monte_Carlo(retirement_distribution)
-  mc.run(n=400)
+  mc.run(n=5)
 
   # Print the results of the monte carlo simulation, showing the probablility
   # of not running out of funds before the end of 30 years.
   print(mc.results(goal=0.0))
 
   # Create the monte carlo plots:
-  mc.histogram()
-  mc.plot(smooth=True)
+  #mc.histogram()
+  mc.plot(smooth=False)
 
   # Show all the stocker plots:
   stocker.show_plots()
