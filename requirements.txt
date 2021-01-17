@@ -1,3 +1,5 @@
-numpy
-astropy
+numpy~=1.19.2
+astropy~=4.2
 statistics
+
+matplotlib~=3.3.2

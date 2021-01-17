@@ -601,6 +601,28 @@ class Monte_Carlo(object):
 
         # Let's get the values of a year across all trials
         # syntax: self.runs[4].returns[12] = year 12 or lifetime 4
+        # lets get the runs x years in a dataframe
+        import pandas as pd
+        data = [['Geeks', 10], ['for', 15], ['geeks', 20]]
+        df = pd.DataFrame(data, columns=['Name', 'Age'])
+        print(df)
+        # arr = numpy.asarray(lst)   num_years = self.scenario.num_years, num_runs = len(self.runs)
+        matrix = np.zeros((len(self.runs), self.scenario.num_years))  # Pre-allocate matrix
+        run = 0
+        for some_run in self.runs:
+            print("run " + str(run))
+            year = 0
+            for some_year_result in some_run.returns:
+                matrix[run, year] = some_year_result
+#                print("result of year "+str(year)+" in run "+ str(run) + " was "+str(some_year_result))
+                year += 1
+            std = matrix[run:].std()
+            mean = matrix[run:].mean()
+            print("run "+str(run) + " mean="+str(mean)+" std="+str(std))
+            run += 1
+        df = pd.DataFrame(data=matrix)
+        print(df)
+        #These aren't the accumulations for each year but just the outcomes so their all just mean based
 
         med = statistics.median_low(self.values)
         p100 = np.percentile(self.values, 10.0, interpolation='nearest')

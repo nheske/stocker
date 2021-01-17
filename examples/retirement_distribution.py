@@ -16,7 +16,7 @@ if __name__== "__main__":
     name="Stocks and Bonds", \
     value=1500000, \
     positions=[stocker.US_Stocks(), stocker.International_Stocks(), stocker.US_Bonds(), stocker.International_Bonds()], \
-    weights=[7, 3, 7, 3] \
+    weights=[1, 0, 0, 0] \
   )
 
   # We are going to live on annual distributions of 75K, increasing by 2% annually
@@ -37,7 +37,7 @@ if __name__== "__main__":
 
   # Run a monte carlo simulation of this scenario with 400 iterations:
   mc = stocker.Monte_Carlo(retirement_distribution)
-  mc.run(n=5)
+  mc.run(n=50)
 
   # Print the results of the monte carlo simulation, showing the probablility
   # of not running out of funds before the end of 30 years.
