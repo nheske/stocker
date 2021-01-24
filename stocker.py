@@ -16,6 +16,10 @@ def _format_percentage(decimal):
     return ("%0.1f%%" % (decimal * 100.0))
 
 
+def _calculate_avg_rate_return(final_value, init_value, num_years):
+    return (final_value / init_value) ** (1 / num_years) - 1
+
+
 #
 # Inflation helper functions:
 #
@@ -528,14 +532,32 @@ class Monte_Carlo(object):
             self.values = _remove_outliers(self.raw_values)
         else:
             self.values = self.raw_values
+
+        final_outcomes = np.array(self.values)
+        # 1 sigma-2 sigma-3-sigma 68–95–99.7 rule
+        # should be .6827 outcomes within mean_outcome +/- std_dev_outcome, .9545 within 2, .9973 within 3
+        mean_outcome = int(statistics.mean(final_outcomes))
+        init_value = self.scenario.portfolio.value()
+        arr = _calculate_avg_rate_return(mean_outcome, init_value, self.scenario.num_years)
+        std_dev_outcome = int(statistics.stdev(final_outcomes))
+        one_sigma = np.where(np.logical_and(final_outcomes >= mean_outcome-std_dev_outcome, final_outcomes <= mean_outcome+std_dev_outcome))[0].size/len(self.runs)
+        two_sigma = np.where(np.logical_and(final_outcomes >= mean_outcome-2*std_dev_outcome, final_outcomes <= mean_outcome+2*std_dev_outcome))[0].size/len(self.runs)
+        three_sigma = np.where(np.logical_and(final_outcomes >= mean_outcome-3*std_dev_outcome, final_outcomes <= mean_outcome+3*std_dev_outcome))[0].size/len(self.runs)
+
         strn = "Monte Carlo Results for the '" + self.scenario.name + "' Scenario:\n"
         strn += "\n"
         strn += "Number of Runs: " + str(len(self.runs)) + "\n"
         strn += "High-end Outliers Removed: " + str(len(self.raw_values) - len(self.values)) + "\n"
         strn += "\n"
         strn += "Inflation Corrected Portfolio Final Values:\n"
-        strn += "  Average:   " + _format_currency(statistics.mean(self.values)) + "\n"
-        strn += "  Std Dev:   " + _format_currency(statistics.stdev(self.values)) + "\n"
+        strn += "  Average:   " + _format_currency(mean_outcome) + "\n"
+        strn += "  Std Dev:   " + _format_currency(std_dev_outcome) + "\n"
+        strn += "  ARR:       " + _format_percentage(arr) + "\n"
+        strn += " 68/95/99.7 rule \n"
+        strn += "1 sigma runs " + _format_percentage(one_sigma) + "\n"
+        strn += "2 sigma runs " + _format_percentage(two_sigma) + "\n"
+        strn += "3 sigma runs " + _format_percentage(three_sigma) + "\n"
+
         strn += "\n"
         strn += "  Median:    " + _format_currency(statistics.median_low(self.values)) + "\n"
         strn += "  MAD:       " + _format_currency(astropy.stats.median_absolute_deviation(self.values)) + "\n"
@@ -600,17 +622,13 @@ class Monte_Carlo(object):
         #self.values is a list[lifetimes] of final portfolio values
 
         # Let's get the values of a year across all trials
-        # syntax: self.runs[4].returns[12] = year 12 or lifetime 4
+        # syntax: self.runs[4].returns[12] = year 12 of lifetime 4
         # lets get the runs x years in a dataframe
-        import pandas as pd
-        data = [['Geeks', 10], ['for', 15], ['geeks', 20]]
-        df = pd.DataFrame(data, columns=['Name', 'Age'])
-        print(df)
         # arr = numpy.asarray(lst)   num_years = self.scenario.num_years, num_runs = len(self.runs)
         matrix = np.zeros((len(self.runs), self.scenario.num_years))  # Pre-allocate matrix
         run = 0
         for some_run in self.runs:
-            print("run " + str(run))
+#            print("run " + str(run))
             year = 0
             for some_year_result in some_run.returns:
                 matrix[run, year] = some_year_result
@@ -618,10 +636,9 @@ class Monte_Carlo(object):
                 year += 1
             std = matrix[run:].std()
             mean = matrix[run:].mean()
-            print("run "+str(run) + " mean="+str(mean)+" std="+str(std))
+#            print("run "+str(run) + " mean="+str(mean)+" std="+str(std))
             run += 1
-        df = pd.DataFrame(data=matrix)
-        print(df)
+
         #These aren't the accumulations for each year but just the outcomes so their all just mean based
 
         med = statistics.median_low(self.values)
@@ -664,14 +681,15 @@ class Monte_Carlo(object):
       # Plot data:
 
         plt.rcParams['axes.xmargin'] = 0
-        year_num = np.arange(0, 31, 1)
+        num_years = len(y97_5) - 1
+        year_num = np.arange(0, num_years + 1, 1)
         plt.margins(x=0)
         dark = '#44697d'  # 68 105 125
         med = '#007db3'  # 0 125 179
         light = '#409ec6'  # 64 158 198
-        plt.fill_between(year_num, y97_5, y87_5, facecolor=light, color=light)
-        plt.fill_between(year_num, y87_5, y75, facecolor=med, color=med)
-        plt.fill_between(year_num, y75, y25, facecolor=dark, color=dark)
+        plt.fill_between(year_num, y97_5, y87_5, facecolor=light, color=light, label="85%")
+        plt.fill_between(year_num, y87_5, y75, facecolor=med, color=med, label="75%")
+        plt.fill_between(year_num, y75, y25, facecolor=dark, color=dark, label="50%")
         plt.fill_between(year_num, y25, y12_5, facecolor=med, color=med)
         plt.fill_between(year_num, y12_5, y2_5, facecolor=light, color=light)
         plt.xlabel('Year')
