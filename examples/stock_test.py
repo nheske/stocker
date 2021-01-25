@@ -2,8 +2,9 @@
 
 # Include the directory up in the path:
 import sys
-sys.path.insert(0,'..')
+import time
 import stocker
+sys.path.insert(0,'..')
 
 
 # Main:
@@ -15,8 +16,8 @@ if __name__== "__main__":
       weights=[1] \
     )
 
-    simplest_scenario = stocker.Scenario(
-      name="Simple Stock Growth", \
+    stock_test = stocker.Scenario(
+      name="Stock Growth Test", \
       portfolio=us_stock_portfolio, \
       num_years=5, \
       annual_contribution=0, \
@@ -24,17 +25,18 @@ if __name__== "__main__":
     )
 
     # Run the scenario once and print and plot the results:
-    simplest_scenario.run()
-    print(simplest_scenario.results())
+    start = time.time()
+    stock_test.run()
+    print(stock_test.results())
 #    simplest_scenario.plot(smooth=False)
 
-    # Run a monte carlo simulation of this scenario with 400 iterations:
-    mc = stocker.Monte_Carlo(simplest_scenario)
-    mc.run(n=100)
+    # Run a monte carlo simulation of this scenario:
+    mc = stocker.Monte_Carlo(stock_test)
+    mc.run(n=10000)
 
     # Print the results of the monte carlo simulation, showing the probablility of not running out of funds.
     print(mc.results(goal=0.0))
-
+    print("Calculation Time:     "+str((time.time() - start)))
     # Create the monte carlo plots:
     # mc.histogram()
     mc.plot(smooth=False)
