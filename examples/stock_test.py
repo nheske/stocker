@@ -32,9 +32,9 @@ if __name__== "__main__":
 
     # Run a monte carlo simulation of this scenario:
     mc = stocker.Monte_Carlo(stock_test)
-    mc.run(n=10000)
+    mc.run(n=100)
 
-    # Print the results of the monte carlo simulation, showing the probablility of not running out of funds.
+    # Print the results of the monte carlo simulation, showing the probability of not running out of funds.
     print(mc.results(goal=0.0))
     print("Calculation Time:     "+str((time.time() - start)))
     # Create the monte carlo plots:

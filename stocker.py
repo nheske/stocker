@@ -33,6 +33,28 @@ def future_value(value, year, rate=0.035):
     return value * (1 + rate) ** year
 
 
+def partition(array, begin, end):
+    pivot = begin
+    for i in range(begin+1, end+1):
+        if array[i] <= array[begin]:
+            pivot += 1
+            array[i], array[pivot] = array[pivot], array[i]
+    array[pivot], array[begin] = array[begin], array[pivot]
+    return pivot
+
+
+def quickSort(array, begin=0, end=None):
+    if end is None:
+        end = len(array) - 1
+    def _quicksort(array, begin, end):
+        if begin >= end:
+            return
+        pivot = partition(array, begin, end)
+        _quicksort(array, begin, pivot-1)
+        _quicksort(array, pivot+1, end)
+    return _quicksort(array, begin, end)
+
+
 #
 # Define a positition
 #
@@ -533,6 +555,7 @@ class Monte_Carlo(object):
         else:
             self.values = self.raw_values
 
+
         final_outcomes = np.array(self.values)
         # 1 sigma-2 sigma-3-sigma 68–95–99.7 rule
         # should be .6827 outcomes within mean_outcome +/- std_dev_outcome, .9545 within 2, .9973 within 3
@@ -605,8 +628,8 @@ class Monte_Carlo(object):
 
     def plot(self, smooth=False):
         total_trials = len(self.runs)
-        i975 = round(total_trials * 0.975)
-        i875 = round(total_trials * 0.875)
+        index_975 = round(total_trials * 0.975)
+        index_875 = round(total_trials * 0.875)
         i750 = round(total_trials * 0.75)
         i500 = round(total_trials * 0.5)
         i250 = round(total_trials * 0.25)
@@ -621,36 +644,69 @@ class Monte_Carlo(object):
 
         #self.values is a list[lifetimes] of final portfolio values
 
+        num_runs = len(self.runs)
+        num_years = self.scenario.num_years
+
         # Let's get the values of a year across all trials
         # syntax: self.runs[4].returns[12] = year 12 of lifetime 4
         # lets get the runs x years in a dataframe
         # arr = numpy.asarray(lst)   num_years = self.scenario.num_years, num_runs = len(self.runs)
-        matrix = np.zeros((len(self.runs), self.scenario.num_years))  # Pre-allocate matrix
+        performance_matrix = np.zeros((num_runs, num_years))  # Pre-allocate matrix
+        dollar_results_matrix = np.zeros((num_runs, num_years))  # Pre-allocate matrix
         run = 0
         for some_run in self.runs:
-#            print("run " + str(run))
             year = 0
-            for some_year_result in some_run.returns:
-                matrix[run, year] = some_year_result
-#                print("result of year "+str(year)+" in run "+ str(run) + " was "+str(some_year_result))
+            for some_year_return in some_run.returns:
+                performance_matrix[run, year] = some_year_return
                 year += 1
-            std = matrix[run:].std()
-            mean = matrix[run:].mean()
+            #for some_year_result in some_run.
+            for some_year_history in some_run.history:
+                print("value is "+str(some_year_history.value()))
+
+            std = performance_matrix[run:].std()
+            mean = performance_matrix[run:].mean()
 #            print("run "+str(run) + " mean="+str(mean)+" std="+str(std))
             run += 1
 
+        final_outcomes = self.values
+        med = statistics.median_low(final_outcomes)
+        p100 = np.percentile(final_outcomes, 10.0, interpolation='nearest')
+        two_point_five = np.percentile(final_outcomes, 2.5, interpolation='nearest')
+        p975 = np.percentile(final_outcomes, 97.5, interpolation='nearest')
+        p875 = np.percentile(final_outcomes, 87.5, interpolation='nearest')
+        p750 = np.percentile(final_outcomes, 75, interpolation='nearest')
+        p500 = np.percentile(final_outcomes, 50, interpolation='nearest')
+        p250 = np.percentile(final_outcomes, 25, interpolation='nearest')
+        p125 = np.percentile(final_outcomes, 12.5, interpolation='nearest')
+        p025 = np.percentile(final_outcomes, 2.5, interpolation='nearest')
+
+        i100 = round(num_runs)
+        index_975 = round(num_runs * 0.975)
+        index_875 = round(num_runs * 0.875)
+        index_750 = round(num_runs * 0.75)
+        index_500 = round(num_runs * 0.5)
+        index_250 = round(num_runs * 0.25)
+        index_125 = round(num_runs * 0.125)
+        index_025 = round(num_runs * 0.025)
+        # TODO try to sort and plot:
+        # results = [[ini], [MONTE_CARLO.inputs.savings], [MONTE_CARLO.inputs.savings],
+        #            [MONTE_CARLO.inputs.savings], [MONTE_CARLO.inputs.savings], [MONTE_CARLO.inputs.savings],
+        #            [MONTE_CARLO.inputs.savings], [MONTE_CARLO.inputs.savings]]
+        results = []
+        for some_year in range(0, num_years):
+            quickSort(performance_matrix[:, some_year])
+            # # After the trials are sorted, get the 97.5% best result, 87.5% best result, etc. and save these for plotting.
+            # # get the 97.5% best return among all the trials for some_year
+            results[0].append(performance_matrix[index_975, some_year])
+            results[1].append(performance_matrix[index_875, some_year])
+            results[2].append(performance_matrix[index_750, some_year])
+            results[3].append(performance_matrix[index_500, some_year])
+            results[4].append(performance_matrix[index_250, some_year])
+            results[5].append(performance_matrix[index_125, some_year])
+            results[7].append(performance_matrix[index_025, some_year])
+
         #These aren't the accumulations for each year but just the outcomes so their all just mean based
 
-        med = statistics.median_low(self.values)
-        p100 = np.percentile(self.values, 10.0, interpolation='nearest')
-        two_point_five = np.percentile(self.values, 2.5, interpolation='nearest')
-        p975 = np.percentile(self.values, 97.5, interpolation='nearest')
-        p875 = np.percentile(self.values, 87.5, interpolation='nearest')
-        p750 = np.percentile(self.values, 75, interpolation='nearest')
-        p500 = np.percentile(self.values, 50, interpolation='nearest')
-        p250 = np.percentile(self.values, 25, interpolation='nearest')
-        p125 = np.percentile(self.values, 12.5, interpolation='nearest')
-        p025 = np.percentile(self.values, 2.5, interpolation='nearest')
         med_scenario = self.runs[self.raw_values.index(med)]
         tenth_scenario = self.runs[self.raw_values.index(p100)]
         scenario_975 = self.runs[self.raw_values.index(p975)]
@@ -660,16 +716,7 @@ class Monte_Carlo(object):
         scenario_250 = self.runs[self.raw_values.index(p250)]
         scenario_125 = self.runs[self.raw_values.index(p125)]
         scenario_025 = self.runs[self.raw_values.index(p025)]
-        # Plot the median and 10th percentile scenario:
-        f = plt.figure()
-#        scenario_025.plot(figure=f, color='lightblue', label='2.5', smooth=smooth)
-#        med_scenario.plot(figure=f, color='lightblue', label='Median', smooth=smooth)
-#        tenth_scenario.plot(figure=f, color='steelblue', label='10th Perc', smooth=smooth)
-
-#        plt.subplot(1, 2, 1)
- #       plt.show()
-
-#        data = [p.value() / 1000000.0 for p in med_scenario.history]
+        # Plot the percentile scenarios:
         y2_5 = [p.value()/1000000 for p in scenario_025.history]
         y12_5 = [p.value()/1000000 for p in scenario_125.history]
         y25 = [p.value()/1000000 for p in scenario_250.history]
@@ -677,11 +724,17 @@ class Monte_Carlo(object):
         y87_5 = [p.value()/1000000 for p in scenario_875.history]
         y97_5 = [p.value()/1000000 for p in scenario_975.history]
 
+        num = num_years + 1
+        y97_5 = np.array(results[0][:num])
+        y87_5 = np.array(results[1][:num])
+        y75 = np.array(results[2][:num])
+        y25 = np.array(results[4][:num])
+        y12_5 = np.array(results[5][:num])
+        y2_5 = np.array(results[6][:num])
 
       # Plot data:
 
         plt.rcParams['axes.xmargin'] = 0
-        num_years = len(y97_5) - 1
         year_num = np.arange(0, num_years + 1, 1)
         plt.margins(x=0)
         dark = '#44697d'  # 68 105 125
